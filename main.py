@@ -1,8 +1,15 @@
 import discord
 import os
 import dotenv
+import requests
 dotenv.load_dotenv()
 token = str(os.getenv("JARBIS_TOKEN"))
+
+def serverStatus():
+    url = "https://www.edsm.net/api-status-v1/elite-server"
+    response = requests.get(url)
+    response = response.json()
+    return(response)
 
 jarbis = discord.Bot()
 
@@ -14,8 +21,10 @@ async def on_ready():
 async def hello(ctx: discord.ApplicationContext):
     await ctx.respond("Hey!")
 
-@jarbis.slash_command(name="kill", description="kill that guy")
-async def kill(ctx: discord.ApplicationContext):
-    await ctx.respond("type shit sir")
+@jarbis.slash_command(name="servers", description="galnet news update")
+async def news(ctx: discord.ApplicationContext):
+    servers = serverStatus()
+    await ctx.respond(f"Servers are {servers["message"]} as of {servers["lastUpdate"]}")
+
 
 jarbis.run(token)
