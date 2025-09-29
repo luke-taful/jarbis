@@ -3,9 +3,12 @@ import os
 import dotenv
 import requests
 import json
+from gemma import TextEngine
 dotenv.load_dotenv()
 token = str(os.getenv("JARBIS_TOKEN"))
 tenorToken = str(os.getenv("TENOR_TOKEN"))
+textEngine = TextEngine()
+
 
 def serverStatus():
     url = "https://www.edsm.net/api-status-v1/elite-server"
@@ -17,14 +20,15 @@ def tenorSearch(search_term):
     r = requests.get("https://tenor.googleapis.com/v2/search?q=%s&key=%s&client_key=%s&limit=%s&media_filter=%s&random=%s" % (search_term, tenorToken, "jarbis_discord_bot", 1, "tinygif", True))
     if r.status_code == 200:
         gifs = json.loads(r.content)
-        print(gifs)
         gif = gifs["results"][0]["media_formats"]["tinygif"]["url"]
 
         return gif
     else:
         return None
 
-jarbis = discord.Bot()
+intents = discord.Intents.default()
+intents.message_content = True
+jarbis = discord.Bot(intents=intents)
 
 @jarbis.listen
 async def on_ready():
@@ -42,11 +46,27 @@ async def serverCheck(ctx: discord.ApplicationContext):
 @jarbis.slash_command(name="true", description="get this man a true")
 async def getThisManATrue(ctx: discord.ApplicationContext):
     gif = tenorSearch("morgan freeman true")
-    # print(gif)
-    await ctx.respond(gif)
-    # if gif:
-    #     await ctx.respond(gif)
-    # else:
-    #     await ctx.respond(f"No True :(")
+    if gif:
+        await ctx.respond(gif)
+    else:
+        await ctx.respond(f"No True :(")
+
+
+# Outside of commands, resort to generative responses
+@jarbis.event
+async def on_message(message:discord.Message):
+
+    if message.author.bot:
+        return None
+    
+    words = message.content.split()
+    if not words:
+        return None
+    
+    if(words[0].lower() == "jarbis"):
+        response = textEngine.ask(message.content)
+        await message.channel.send(response)
+
+    
 
 jarbis.run(token)
